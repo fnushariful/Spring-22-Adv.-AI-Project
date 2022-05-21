@@ -8,10 +8,15 @@ import sys
 import math
 import numpy as np
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../../Sampling_based_Planning/")
+import timeit
+from scipy.spatial import distance
 
-from Sampling_based_Planning.rrt_2D import env, plotting, utils, queue
+# sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
+#                 "/../../Sampling_based_Planning/")
+
+# from Sampling_based_Planning.rrt_2D import env, plotting, utils, queue
+
+import env, plotting, utils, queue
 
 
 class Node:
@@ -64,6 +69,7 @@ class RrtStar:
         self.path = self.extract_path(self.vertex[index])
 
         self.plotting.animation(self.vertex, self.path, "rrt*, N = " + str(self.iter_max))
+        return self.path 
 
     def new_state(self, node_start, node_goal):
         dist, theta = self.get_distance_and_angle(node_start, node_goal)
@@ -173,12 +179,79 @@ class RrtStar:
 
 
 def main():
+
+    startTime = timeit.default_timer()
     x_start = (18, 8)  # Starting node
     x_goal = (37, 18)  # Goal node
 
-    rrt_star = RrtStar(x_start, x_goal, 10, 0.10, 20, 10000)
-    rrt_star.planning()
+    rrt_star = RrtStar(x_start, x_goal, 10, 0.10, 20, 3500)
+    path = rrt_star.planning()
 
 
+    # x_start = (14, 12)  # Starting node
+    # x_goal = (30, 10)  # Goal node
+
+    # rrt_star = RrtStar(x_start, x_goal, 10, 0.10, 20, 1000)
+    # path = rrt_star.planning()
+    # print("start and goal node ",x_start,x_goal)
+
+    # print("path ",path)
+
+    path.reverse()
+    # print("Path ",path)
+    print("start and goal changed ",x_start," ",x_goal)
+    totalPath = []
+    # goal = x_goal
+
+    numberOfTimesGoalChanged = 1
+    goalChangingTime = len(path)-3
+    # goalTmp = [[40,5],[10,25],[25,10]]
+    goalTmp = [[40,5]]
+    i = 0 # for next wayPoint
+    x = 0 # for next possible goal
+    isGoalChanged = False
+    while path[i] != x_goal:
+        totalPath.append(path[i])
+        print("I value ",i)
+        if i == goalChangingTime:
+            if x < numberOfTimesGoalChanged :
+                x_goal = goalTmp[x] # goal changed
+                isGoalChanged = True
+                x_start = path[i]
+                x += 1          
+                print("start and goal changed ",x_start," ",x_goal)
+                rrt_start = RrtStar(x_start, x_goal, 10, 0.10, 20, 3500)
+                path = rrt_start.planning()
+                path.reverse()
+                goalChangingTime = len(path)-3
+                # print("Changed Path ",path)          
+        i += 1
+        if isGoalChanged:
+            i = 0
+            isGoalChanged = False
+        # print("Path changed ",path)  
+      # print("Path after changed goal ",path[i]," new goal ",goal)    
+    
+    totalPath.append(x_goal)
+    totalPathDistance = 0
+    print(len(totalPath))
+    for i in range(len(totalPath)-1):
+      totalPathDistance += distance.euclidean(totalPath[i],totalPath[i+1])
+      # print(totalPath[i])
+    # for i in range(totalPath):
+    #   totalPathDistance += distance.euclidean(totalPath[i],totalPath[i+1])
+    print("Total Path Distance ",totalPathDistance)
+    print("Start ",x_start,"Goal ",x_goal)
+    print("Path",path)
+    # print("TotalPath ",totalPath)
+
+    if path is None:
+        print("Cannot find path")
+    else:
+        end = timeit.default_timer()
+        print ('RRT* End : ', end)
+        print ('RRT*  elapsed time is : ', end - startTime)
+        print("found path!!")
+    
 if __name__ == '__main__':
     main()
